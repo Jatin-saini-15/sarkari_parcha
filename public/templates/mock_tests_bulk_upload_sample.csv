@@ -1,0 +1,6 @@
+title,examUrl,category,durationHours,durationMinutes,totalMarks,isFree
+SSC CGL Mock Test 1,https://example.com/ssc-cgl-mock-1,SSC,2,0,200,true
+SSC CGL Mock Test 2,https://example.com/ssc-cgl-mock-2,SSC,2,30,200,true
+Banking PO Mock Test 1,https://example.com/banking-po-mock-1,Banking,3,0,200,false
+Railways NTPC Mock Test 1,https://example.com/railways-ntpc-mock-1,Railways,2,30,120,true
+UPSC IAS Mock Test 1,https://example.com/upsc-ias-mock-1,UPSC,3,0,200,false 

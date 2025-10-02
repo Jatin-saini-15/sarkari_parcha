@@ -1,0 +1,410 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("user") // "user", "admin", "owner"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  accounts Account[]
+  sessions Session[]
+  
+  // User profile fields
+  phone         String?
+  dateOfBirth   DateTime?
+  address       String?
+  city          String?
+  state         String?
+  pincode       String?
+  
+  // Exam preferences (stored as JSON string)
+  preferredExams String? // JSON string of exam types like '["ssc", "banking", "railways"]'
+  
+  // Subscription info
+  isPremium     Boolean   @default(false)
+  premiumUntil  DateTime?
+  subscriptions Subscription[]
+  
+  testAttempts TestAttempt[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Exam Management Models
+model ExamCategory {
+  id          String      @id @default(cuid())
+  name        String      @unique // e.g., "SSC", "Banking", "Railways"
+  slug        String      @unique // e.g., "ssc", "banking", "railways"
+  description String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  examNames   ExamName[]
+  examYears   ExamYear[]
+  testSeries  TestSeries[]
+  
+  pdfUploads  PdfUpload[]
+  mockTests   MockTest[]
+  
+  @@map("exam_categories")
+}
+
+model ExamName {
+  id         String       @id @default(cuid())
+  name       String       // e.g., "CGL", "CHSL", "MTS" for SSC
+  slug       String       // e.g., "cgl", "chsl", "mts"
+  categoryId String
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  
+  category   ExamCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  exams      Exam[]
+  
+  pdfUploads  PdfUpload[]
+  mockTests   MockTest[]
+  
+  @@unique([categoryId, slug])
+  @@map("exam_names")
+}
+
+model ExamYear {
+  id         String       @id @default(cuid())
+  year       Int          // e.g., 2024, 2025
+  categoryId String
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  
+  category   ExamCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  exams      Exam[]
+  
+  @@unique([categoryId, year])
+  @@map("exam_years")
+}
+
+model TestSeries {
+  id          String       @id @default(cuid())
+  name        String       // e.g., "SSC CGL Complete Test Series"
+  slug        String       // e.g., "ssc-cgl-complete-test-series"
+  description String?
+  categoryId  String
+  isActive    Boolean      @default(true)
+  isFree      Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  category    ExamCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  exams       Exam[]
+  
+  @@unique([categoryId, slug])
+  @@map("test_series")
+}
+
+model Exam {
+  id          String      @id @default(cuid())
+  title       String      // e.g., "SSC CGL Mock Test 1"
+  slug        String      // e.g., "ssc-cgl-mock-test-1"
+  description String?
+  examUrl     String      // Third-party exam URL
+  examType    String      @default("mock") // "mock", "pyq", "live"
+  isActive    Boolean     @default(true)
+  isFree      Boolean      @default(false)
+  duration    Int?        // Duration in minutes
+  totalMarks  Int?        // Total marks
+  yearId      String?     // Optional for live and mock tests
+  examNameId  String?     // Optional: specific exam name like CGL, CHSL
+  testSeriesId String?    // Optional: for mock tests that belong to a test series
+  // For live tests
+  scheduledAt DateTime?   // When the live test is scheduled
+  examEndTime DateTime?   // When the live test ends
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  examYear    ExamYear?   @relation(fields: [yearId], references: [id], onDelete: Cascade)
+  examName    ExamName?   @relation(fields: [examNameId], references: [id], onDelete: SetNull)
+  testSeries  TestSeries? @relation(fields: [testSeriesId], references: [id], onDelete: SetNull)
+  
+  @@unique([yearId, slug])
+  @@map("exams")
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // FREE_COUPON, PAID_MONTHLY, PAID_YEARLY
+  status      String   // ACTIVE, EXPIRED, CANCELLED
+  startDate   DateTime
+  endDate     DateTime
+  amount      Float?
+  currency    String?
+  paymentId   String?
+  orderId     String?
+  couponCode  String?
+  couponType  String?
+  isAutoRenew Boolean  @default(false)
+  cancelledAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+model PremiumConfig {
+  id                      Int      @id @default(autoincrement())
+  subscriptionDurationDays Int     @default(90) // Duration in days
+  originalPrice           Float    @default(499)
+  discountPercentage      Float    @default(100) // 0-100%
+  couponCode             String   @default("FREE499")
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model AdminSettings {
+  id                    String   @id @default(cuid())
+  defaultFreeDuration   Int      @default(90)    // Default free subscription duration in days
+  defaultPremiumDuration Int     @default(365)   // Default premium subscription duration in days
+  promotionalMessage    String   @default("Limited Time Offer: All Exams Test Series for 1 Year @ ₹0")
+  isPromotionActive     Boolean  @default(true)
+  maxFreeTrials         Int      @default(1)     // Maximum free trials per user
+  referralBonus         Int      @default(30)    // Referral bonus in days
+  heroBannerMessage     String?  // Preserve existing column
+  isHeroBannerActive    Boolean  @default(false) // Preserve existing column
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@map("admin_settings")
+}
+
+// PDF Processing Models
+model PdfUpload {
+  id            String   @id @default(cuid())
+  originalName  String
+  fileName      String   @unique
+  filePath      String
+  fileSize      Int
+  uploadedBy    String
+  status        String   @default("UPLOADED") // UPLOADED, PROCESSING, PROCESSED, FAILED
+  processingLog String?  // JSON string of processing steps
+  categoryId    String?
+  examNameId    String?
+  year          Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  category      ExamCategory? @relation(fields: [categoryId], references: [id])
+  examName      ExamName?     @relation(fields: [examNameId], references: [id])
+  mockTests     MockTest[]
+  
+  @@map("pdf_uploads")
+}
+
+model MockTest {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  description     String?
+  instructions    String?
+  duration        Int      // Duration in minutes
+  totalMarks      Int
+  negativeMarking Float?   // Negative marking per wrong answer
+  passingMarks    Int?
+  isActive        Boolean  @default(true)
+  isFree          Boolean  @default(false)
+  testType        String   @default("mock") // "mock" or "pyq"
+  categoryId      String
+  examNameId      String?
+  pdfUploadId     String?
+  docxUploadId    String?  // Added: link to DOCX upload
+  folderId        String?  // Added: folder linkage
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  category        ExamCategory @relation(fields: [categoryId], references: [id])
+  examName        ExamName?    @relation(fields: [examNameId], references: [id])
+  pdfUpload       PdfUpload?   @relation(fields: [pdfUploadId], references: [id])
+  docxUpload      DocxUpload?  @relation(fields: [docxUploadId], references: [id])
+  folder          Folder?      @relation(fields: [folderId], references: [id])
+  questions       Question[]
+  attempts        TestAttempt[]
+  sections        TestSection[] // Added: sectional tests
+  
+  @@map("mock_tests")
+}
+
+model TestSection {
+  id          String    @id @default(cuid())
+  mockTestId  String
+  name        String
+  order       Int       @default(1)
+  duration    Int?
+  totalMarks  Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  mockTest    MockTest  @relation(fields: [mockTestId], references: [id], onDelete: Cascade)
+  questions   Question[]
+
+  @@unique([mockTestId, order])
+  @@map("test_sections")
+}
+
+model Question {
+  id              String   @id @default(cuid())
+  mockTestId      String
+  sectionId       String?  // Added: link to section
+  questionNumber  Int
+  questionText    String
+  questionImage   String?  // URL to question image if extracted
+  optionA         String
+  optionAImage    String?  // URL to option A image if extracted
+  optionB         String
+  optionBImage    String?
+  optionC         String
+  optionCImage    String?
+  optionD         String
+  optionDImage    String?
+  correctOption   String   // A, B, C, or D
+  explanation     String?  // AI-generated explanation
+  subject         String?  // Subject categorization
+  difficulty      String?  // Easy, Medium, Hard
+  marks           Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  mockTest        MockTest     @relation(fields: [mockTestId], references: [id], onDelete: Cascade)
+  section         TestSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  responses       QuestionResponse[]
+  
+  @@unique([mockTestId, questionNumber])
+  @@map("questions")
+}
+
+model TestAttempt {
+  id              String   @id @default(cuid())
+  mockTestId      String
+  userId          String
+  attemptNumber   Int      @default(1) // Track attempt number for each user
+  startTime       DateTime
+  endTime         DateTime?
+  totalQuestions  Int
+  attemptedQuestions Int @default(0)
+  correctAnswers  Int      @default(0)
+  wrongAnswers    Int      @default(0)
+  skippedQuestions Int     @default(0)
+  totalMarks      Int      @default(0)
+  percentage      Float    @default(0)
+  timeTaken       Int?     // Time taken in minutes
+  isCompleted     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  mockTest        MockTest @relation(fields: [mockTestId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses       QuestionResponse[]
+  
+  @@unique([mockTestId, userId, attemptNumber])
+  @@map("test_attempts")
+}
+
+model QuestionResponse {
+  id              String   @id @default(cuid())
+  attemptId       String
+  questionId      String
+  selectedOption  String?  // A, B, C, D or null for skipped
+  isCorrect       Boolean  @default(false)
+  timeTaken       Int?     // Time taken for this question in seconds
+  createdAt       DateTime @default(now())
+  
+  attempt         TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question        Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  @@unique([attemptId, questionId])
+  @@map("question_responses")
+}
+
+model DocxUpload {
+  id            String   @id @default(cuid())
+  originalName  String
+  fileName      String   @unique
+  filePath      String
+  fileSize      Int
+  uploadedBy    String
+  status        String   @default("UPLOADED")
+  processingLog String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  mockTests     MockTest[]
+
+  @@map("docx_uploads")
+}
+
+model Folder {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  parentId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  parent      Folder?   @relation("FolderToChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Folder[]  @relation("FolderToChildren")
+  mockTests   MockTest[]
+
+  @@unique([parentId, name])
+  @@map("folders")
+}

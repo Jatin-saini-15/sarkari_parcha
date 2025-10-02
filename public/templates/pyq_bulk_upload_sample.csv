@@ -1,0 +1,6 @@
+title,examUrl,category,examName,year,durationHours,durationMinutes,totalMarks,isFree
+SSC CGL 2023 Question Paper,https://example.com/ssc-cgl-2023,SSC,CGL,2023,2,30,200,true
+SSC CHSL 2023 Question Paper,https://example.com/ssc-chsl-2023,SSC,CHSL,2023,1,0,100,true
+IBPS PO 2023 Question Paper,https://example.com/ibps-po-2023,Banking,PO,2023,3,0,200,false
+RRB NTPC 2023 Question Paper,https://example.com/rrb-ntpc-2023,Railways,NTPC,2023,2,30,120,true
+UPSC IAS 2023 Prelims,https://example.com/upsc-ias-2023,UPSC,,2023,2,0,200,false 
