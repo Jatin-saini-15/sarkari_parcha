@@ -1,0 +1,72 @@
+{
+  "name": "sarkari-parcha-landing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modern landing page for Sarkari Parcha - Government Exam Preparation Platform",
+  "keywords": [
+    "government-exams",
+    "ssc",
+    "banking",
+    "railways",
+    "mock-tests",
+    "education"
+  ],
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "build:analyze": "ANALYZE=true next build",
+    "preview": "next build && next start",
+    "db:backup": "node scripts/auto-backup.js",
+    "db:restore": "cp prisma/dev-backup-*.db prisma/dev.db && echo 'Database restored successfully!'",
+    "db:seed": "npx tsx prisma/seed.ts && npx tsx prisma/seed-exam-names.ts",
+    "db:reset": "npx prisma migrate reset --force && npm run db:seed",
+    "db:push": "npx prisma db push && npm run db:seed",
+    "backup": "./scripts/backup-db.sh",
+    "db:reset-safe": "npm run backup && npx prisma migrate reset"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.10.0",
+    "@google-cloud/vision": "^5.2.0",
+    "@heroicons/react": "^2.2.0",
+    "@prisma/client": "^6.8.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/multer": "^2.0.0",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/xlsx": "^0.0.35",
+    "autoprefixer": "^10.4.21",
+    "aws-sdk": "^2.1692.0",
+    "bcryptjs": "^2.4.3",
+    "framer-motion": "^12.18.1",
+    "lucide-react": "^0.525.0",
+    "multer": "^2.0.1",
+    "next": "15.3.2",
+    "next-auth": "^4.24.10",
+    "openai": "^5.8.2",
+    "prisma": "^6.8.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "xlsx": "^0.18.5",
+    "mammoth": "^1.7.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^8",
+    "eslint-config-next": "15.3.2",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  }
+}
